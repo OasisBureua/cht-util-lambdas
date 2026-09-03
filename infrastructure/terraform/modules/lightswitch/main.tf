@@ -43,7 +43,7 @@ resource "aws_lambda_permission" "on_scheduler" {
   action        = "lambda:InvokeFunction"
   function_name = var.on_function_name
   principal     = "scheduler.amazonaws.com"
-  source_arn    = aws_scheduler_schedule.on.arn
+  source_arn    = aws_scheduler_schedule.lightswitch_on.arn
 }
 
 resource "aws_lambda_permission" "off_scheduler" {
@@ -51,5 +51,5 @@ resource "aws_lambda_permission" "off_scheduler" {
   action        = "lambda:InvokeFunction"
   function_name = var.off_function_name
   principal     = "scheduler.amazonaws.com"
-  source_arn    = aws_scheduler_schedule.off.arn
+  source_arn    = aws_scheduler_schedule.lightswitch_off.arn
 }
