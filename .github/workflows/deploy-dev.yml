@@ -1,5 +1,7 @@
 name: Deploy to Development
 
+# Manual: Actions → Deploy to Development → Run workflow (pick feature/* or main).
+# Automatic: push to feature/** (lambda / infra / scripts / workflow paths).
 on:
   workflow_dispatch:
     inputs:

@@ -61,6 +61,18 @@ Optional: limit the environment to `feature/**` (and `main` if you want manual r
 | `rollback.yml` | Manual | Previous ECR tag → `lambda update-function-code` |
 | `dev-lightswitch.yml` | Manual | Invoke `cht-dev-lightswitch-on` or `cht-dev-lightswitch-off` |
 
+## Manual deploy (same as cht-platform-tool)
+
+GitHub only lists **Run workflow** for YAML that exists on **`main`**. After that:
+
+1. **Actions → Deploy to Development → Run workflow**
+2. Use branch **`feature/…`** (the branch that has the Lambda/Terraform code)
+3. Optional inputs:
+   - `deploy_all` — ignore change detection, build every Lambda
+   - `plan_only` — Terraform plan, skip apply / image roll
+
+Also available from the same menu once on `main`: **Rollback Deployment**, **Dev lightswitch**.
+
 ## Deploy scope
 
 `scripts/ci-detect-changed-lambdas.sh` lists `lambdas/*` that contain a `Dockerfile` and diffs against the change-base SHA:
