@@ -1,0 +1,51 @@
+name: Dev lightswitch
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Turn development stacks on or off'
+        required: true
+        type: choice
+        options:
+          - 'on'
+          - 'off'
+
+env:
+  AWS_REGION: us-east-1
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  invoke:
+    name: Invoke lightswitch
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Invoke Lambda
+        env:
+          ACTION: ${{ inputs.action }}
+        run: |
+          set -euo pipefail
+          FN="cht-dev-lightswitch-${ACTION}"
+          PAYLOAD="$(jq -nc --arg src github.actions '{source:$src}')"
+          aws lambda invoke \
+            --function-name "$FN" \
+            --cli-binary-format raw-in-base64-out \
+            --payload "$PAYLOAD" \
+            --region "$AWS_REGION" \
+            out.json
+          cat out.json
+          echo "## Invoked \`${FN}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat out.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

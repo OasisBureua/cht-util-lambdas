@@ -1,0 +1,55 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      lambda:
+        description: 'Lambda directory name to roll back'
+        required: true
+        type: choice
+        options:
+          - dev-lightswitch-on
+          - dev-lightswitch-off
+          - cost-reporter
+      image_tag:
+        description: 'ECR image tag to roll back to (e.g. 1.0.0)'
+        required: true
+        type: string
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 233636046512.dkr.ecr.us-east-1.amazonaws.com
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  rollback:
+    name: Rollback Lambda image
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update function code
+        env:
+          NAME: ${{ inputs.lambda }}
+          TAG: ${{ inputs.image_tag }}
+        run: |
+          set -euo pipefail
+          FN="cht-dev-${NAME}"
+          IMAGE="${ECR_REGISTRY}/cht-dev-${NAME}:${TAG}"
+          aws lambda update-function-code \
+            --function-name "$FN" \
+            --image-uri "$IMAGE" \
+            --region "$AWS_REGION"
+          echo "Rolled back ${FN} to ${IMAGE}"
