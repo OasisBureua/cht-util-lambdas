@@ -53,6 +53,7 @@
         "ecr:DeleteRepository",
         "ecr:SetRepositoryPolicy",
         "ecr:GetRepositoryPolicy",
+        "ecr:DeleteRepositoryPolicy",
         "ecr:PutImageScanningConfiguration",
         "ecr:GetImageScanningConfiguration"
       ],

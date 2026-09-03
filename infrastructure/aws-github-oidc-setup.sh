@@ -2,6 +2,7 @@
 # One-time AWS admin setup: GitHub Actions OIDC role for cht-util-lambdas (development only).
 # Does not deploy. Apply/push/invoke happen only in GitHub Actions after you paste the role ARN.
 set -euo pipefail
+export AWS_PAGER=""
 
 echo "Setting up GitHub Actions OIDC for cht-util-lambdas (development)"
 echo "================================================================"

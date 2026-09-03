@@ -26,11 +26,13 @@ The script:
 - Trusts this repo on GitHub environment `development` and `feature/*` (slug + optional immutable org/repo IDs)
 - Attaches [infrastructure/iam/github-actions-deploy-policy.json](../infrastructure/iam/github-actions-deploy-policy.json) (ECR `cht-dev-*`, Lambda `cht-dev-*`, Scheduler, Terraform state prefix `util-lambdas/`)
 
-After editing the JSON, push a new policy version:
+After editing the JSON, push a new policy version **in AWS** (git alone does not update the role):
 
 ```bash
 ./infrastructure/aws-github-oidc-update-deploy-policy.sh
 ```
+
+That is required when Terraform needs a new ECR/IAM action (for example `ecr:DeleteRepositoryPolicy` when renaming a repo).
 
 ### 2. GitHub Environment secret
 
