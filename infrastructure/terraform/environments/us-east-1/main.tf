@@ -51,12 +51,15 @@ locals {
     }
   }
 
+  # lambdas/dev-lightswitch-on → cht-dev-lightswitch-on
+  # lambdas/cost-reporter      → cht-dev-cost-reporter
   function_names = {
-    for name, _cfg in local.lambdas : name => "cht-dev-${name}"
+    for name, _cfg in local.lambdas :
+    name => startswith(name, "dev-") ? "cht-${name}" : "cht-dev-${name}"
   }
 
   repository_names = [
-    for name in keys(local.lambdas) : "cht-dev-${name}"
+    for name in keys(local.function_names) : local.function_names[name]
   ]
 
   lightswitch_env = {
@@ -98,7 +101,11 @@ module "lambda" {
   function_name     = local.function_names[each.key]
   environment       = var.environment
   role_arn          = each.value.lightswitch ? module.iam.lightswitch_role_arn : module.iam.stub_role_arn
-  image_uri         = var.lambda_images[each.key]
+  image_uri = lookup(
+    var.lambda_images,
+    each.key,
+    "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${local.function_names[each.key]}:dev-latest"
+  )
   timeout_seconds   = each.value.timeout
   memory_mb         = each.value.memory
   lightswitch       = each.value.lightswitch

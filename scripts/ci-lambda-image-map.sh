@@ -1,30 +1,33 @@
 #!/usr/bin/env bash
-# Build a JSON map of lambda directory name → image URI for Terraform.
+# Build a JSON object {lambda_images: {name: uri, ...}} for terraform -var-file.
 # Uses newly built tags from images.env (NAME=tag lines) when present,
 # otherwise the live Lambda ImageUri, otherwise :dev-latest.
 #
 # Usage: ci-lambda-image-map.sh <ecr_registry> <aws_region> [images.env]
+# Always writes JSON to stdout. Safe to run from any cwd.
 set -euo pipefail
 
 REGISTRY="${1:?registry required}"
 REGION="${2:-us-east-1}"
 IMAGES_ENV="${3:-}"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-declare -A NEW_TAGS=()
-if [ -n "$IMAGES_ENV" ] && [ -f "$IMAGES_ENV" ]; then
-  while IFS='=' read -r name tag; do
-    [ -n "${name:-}" ] || continue
-    NEW_TAGS["$name"]="$tag"
-  done < "$IMAGES_ENV"
-fi
+tag_for() {
+  local name="$1"
+  if [ -n "$IMAGES_ENV" ] && [ -f "$IMAGES_ENV" ]; then
+    awk -F= -v n="$name" '$1==n {print $2; exit}' "$IMAGES_ENV"
+  fi
+}
 
 items=()
-for dockerfile in lambdas/*/Dockerfile; do
+shopt -s nullglob
+for dockerfile in "$ROOT"/lambdas/*/Dockerfile; do
   name="$(basename "$(dirname "$dockerfile")")"
-  repo="cht-dev-${name}"
-  fn="cht-dev-${name}"
-  if [ -n "${NEW_TAGS[$name]:-}" ]; then
-    uri="${REGISTRY}/${repo}:${NEW_TAGS[$name]}"
+  repo="$("$ROOT/scripts/lambda-aws-name.sh" "$name")"
+  fn="$repo"
+  tag="$(tag_for "$name")"
+  if [ -n "$tag" ]; then
+    uri="${REGISTRY}/${repo}:${tag}"
   else
     uri="$(aws lambda get-function \
       --function-name "$fn" \
@@ -38,4 +41,9 @@ for dockerfile in lambdas/*/Dockerfile; do
   items+=("$(jq -nc --arg k "$name" --arg v "$uri" '{key:$k,value:$v}')")
 done
 
-printf '%s\n' "${items[@]}" | jq -s 'from_entries'
+if [ ${#items[@]} -eq 0 ]; then
+  echo "No lambdas/*/Dockerfile found under ${ROOT}" >&2
+  exit 1
+fi
+
+printf '%s\n' "${items[@]}" | jq -s '{lambda_images: from_entries}'

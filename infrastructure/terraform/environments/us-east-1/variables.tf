@@ -31,4 +31,5 @@ variable "health_urls" {
 variable "lambda_images" {
   description = "Map of lambda directory name → container image URI"
   type        = map(string)
+  default     = {}
 }

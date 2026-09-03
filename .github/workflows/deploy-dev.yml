@@ -176,9 +176,10 @@ jobs:
         run: |
           set -euo pipefail
           MISSING=false
+          chmod +x "${{ github.workspace }}/scripts/lambda-aws-name.sh"
           for dockerfile in "${{ github.workspace }}"/lambdas/*/Dockerfile; do
             name="$(basename "$(dirname "$dockerfile")")"
-            repo="cht-dev-${name}"
+            repo="$("${{ github.workspace }}/scripts/lambda-aws-name.sh" "$name")"
             if ! aws ecr describe-repositories --repository-names "$repo" --region "$AWS_REGION" >/dev/null 2>&1; then
               echo "ECR missing: $repo"
               MISSING=true
@@ -200,10 +201,10 @@ jobs:
           LAMBDAS_JSON: ${{ needs.changes.outputs.lambdas_json }}
         run: |
           set -euo pipefail
-          chmod +x scripts/next-dev-image-tag.sh
+          chmod +x scripts/next-dev-image-tag.sh scripts/lambda-aws-name.sh
           : > images.env
           echo "$LAMBDAS_JSON" | jq -r '.[]' | while read -r name; do
-            repo="cht-dev-${name}"
+            repo="$(./scripts/lambda-aws-name.sh "$name")"
             tag="$(./scripts/next-dev-image-tag.sh "$repo" "$AWS_REGION")"
             echo "${name}=${tag}" >> images.env
             echo "Building ${repo}:${tag}"
@@ -225,12 +226,16 @@ jobs:
         working-directory: ${{ env.TF_ENV_DIR }}
         run: |
           chmod +x "${{ github.workspace }}/scripts/ci-lambda-image-map.sh"
-          IMAGE_MAP="$("${{ github.workspace }}/scripts/ci-lambda-image-map.sh" \
-            "$ECR_REGISTRY" "$AWS_REGION" "${{ github.workspace }}/images.env")"
-          echo "lambda_images=${IMAGE_MAP}"
+          "${{ github.workspace }}/scripts/ci-lambda-image-map.sh" \
+            "$ECR_REGISTRY" \
+            "$AWS_REGION" \
+            "${{ github.workspace }}/images.env" \
+            > lambda_images.auto.tfvars.json
+          echo "lambda_images.auto.tfvars.json:"
+          cat lambda_images.auto.tfvars.json
           terraform plan \
             -var-file="${{ env.TF_VAR_FILE }}" \
-            -var="lambda_images=${IMAGE_MAP}" \
+            -var-file=lambda_images.auto.tfvars.json \
             -out=tfplan
 
       - name: Plan summary
@@ -281,8 +286,8 @@ jobs:
           echo "$LAMBDAS_JSON" | jq -r '.[]' | while read -r name; do
             tag="$(awk -F= -v n="$name" '$1==n {print $2}' images.env)"
             [ -n "$tag" ] || continue
-            fn="cht-dev-${name}"
-            image="${ECR_REGISTRY}/cht-dev-${name}:${tag}"
+            fn="$(./scripts/lambda-aws-name.sh "$name")"
+            image="${ECR_REGISTRY}/${fn}:${tag}"
             if ! aws lambda get-function --function-name "$fn" --region "$AWS_REGION" >/dev/null 2>&1; then
               echo "Lambda ${fn} not provisioned yet (will exist after infra apply)."
               continue
