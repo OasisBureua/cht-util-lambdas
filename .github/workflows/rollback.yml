@@ -46,8 +46,9 @@ jobs:
           TAG: ${{ inputs.image_tag }}
         run: |
           set -euo pipefail
-          FN="cht-dev-${NAME}"
-          IMAGE="${ECR_REGISTRY}/cht-dev-${NAME}:${TAG}"
+          chmod +x scripts/lambda-aws-name.sh
+          FN="$(./scripts/lambda-aws-name.sh "$NAME")"
+          IMAGE="${ECR_REGISTRY}/${FN}:${TAG}"
           aws lambda update-function-code \
             --function-name "$FN" \
             --image-uri "$IMAGE" \
