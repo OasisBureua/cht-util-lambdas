@@ -1,0 +1,190 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyDangerousIAM",
+      "Effect": "Deny",
+      "Action": [
+        "iam:CreateUser",
+        "iam:DeleteUser",
+        "iam:CreateAccessKey",
+        "iam:DeleteAccessKey",
+        "iam:UpdateAccessKey",
+        "iam:CreateLoginProfile",
+        "iam:UpdateLoginProfile",
+        "iam:DeleteLoginProfile",
+        "iam:AttachUserPolicy",
+        "iam:DetachUserPolicy",
+        "iam:PutUserPolicy",
+        "iam:DeleteUserPolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECRAuth",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:DescribeRegistry"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECRPushPullDevUtil",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:CompleteLayerUpload",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:UploadLayerPart",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:DescribeRepositories",
+        "ecr:DescribeImages",
+        "ecr:ListImages",
+        "ecr:ListTagsForResource",
+        "ecr:TagResource",
+        "ecr:UntagResource",
+        "ecr:PutLifecyclePolicy",
+        "ecr:GetLifecyclePolicy",
+        "ecr:DeleteLifecyclePolicy",
+        "ecr:CreateRepository",
+        "ecr:DeleteRepository",
+        "ecr:SetRepositoryPolicy",
+        "ecr:GetRepositoryPolicy",
+        "ecr:DeleteRepositoryPolicy",
+        "ecr:PutImageScanningConfiguration",
+        "ecr:GetImageScanningConfiguration"
+      ],
+      "Resource": "arn:aws:ecr:us-east-1:233636046512:repository/cht-dev-*"
+    },
+    {
+      "Sid": "TerraformStateList",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketVersioning",
+        "s3:GetEncryptionConfiguration"
+      ],
+      "Resource": "arn:aws:s3:::cht-platform-terraform-state",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "util-lambdas/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "TerraformStateObjects",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::cht-platform-terraform-state/util-lambdas/*"
+    },
+    {
+      "Sid": "DeployIAMRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:UpdateRole",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:ListInstanceProfilesForRole",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:PassRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::233636046512:role/cht-dev-lightswitch*",
+        "arn:aws:iam::233636046512:role/cht-dev-util-lambda"
+      ]
+    },
+    {
+      "Sid": "ServiceLinkedRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateServiceLinkedRole",
+        "iam:GetServiceLinkedRoleDeletionStatus"
+      ],
+      "Resource": "arn:aws:iam::233636046512:role/aws-service-role/*",
+      "Condition": {
+        "StringEquals": {
+          "iam:AWSServiceName": [
+            "lambda.amazonaws.com",
+            "scheduler.amazonaws.com"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "UtilLambdaDeploy",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:CreateFunction",
+        "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:GetFunction",
+        "lambda:GetFunctionConfiguration",
+        "lambda:ListFunctions",
+        "lambda:ListVersionsByFunction",
+        "lambda:PublishVersion",
+        "lambda:DeleteFunction",
+        "lambda:AddPermission",
+        "lambda:RemovePermission",
+        "lambda:GetPolicy",
+        "lambda:TagResource",
+        "lambda:UntagResource",
+        "lambda:ListTags",
+        "lambda:InvokeFunction"
+      ],
+      "Resource": "arn:aws:lambda:us-east-1:233636046512:function:cht-dev-*"
+    },
+    {
+      "Sid": "EventBridgeScheduler",
+      "Effect": "Allow",
+      "Action": [
+        "scheduler:CreateSchedule",
+        "scheduler:UpdateSchedule",
+        "scheduler:DeleteSchedule",
+        "scheduler:GetSchedule",
+        "scheduler:ListSchedules",
+        "scheduler:ListTagsForResource",
+        "scheduler:TagResource",
+        "scheduler:UntagResource"
+      ],
+      "Resource": [
+        "arn:aws:scheduler:us-east-1:233636046512:schedule/default/cht-dev-lightswitch-*"
+      ]
+    },
+    {
+      "Sid": "LogsAndIdentity",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DeleteLogGroup",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:PutRetentionPolicy",
+        "logs:TagResource",
+        "logs:UntagResource",
+        "logs:ListTagsForResource",
+        "sts:GetCallerIdentity",
+        "tag:GetResources"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
