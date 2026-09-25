@@ -19,7 +19,7 @@ def test_denied_prod_and_platform_names():
     assert is_denied_name("contenthub-cluster")
     assert is_denied_name("contenthub-api")
     assert is_denied_name("cht-prod-db")
-    assert is_denied_name("something-without-dev")
+    assert is_denied_name("something-without-marker")
 
 
 def test_allowed_dev_names():
@@ -28,6 +28,7 @@ def test_allowed_dev_names():
     assert not is_denied_name("contenthub-dev-cluster")
     assert not is_denied_name("contenthub-dev-api")
     assert not is_denied_name("cht-dev-companion-db")
+    assert not is_denied_name("cht-reports-dev")
 
 
 def test_assert_on_allowlist(monkeypatch):

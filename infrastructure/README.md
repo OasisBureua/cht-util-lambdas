@@ -58,7 +58,7 @@ From `dev.github.tfvars`, passed into both lightswitch Lambdas and used to scope
 
 | Cluster | Services |
 |---------|----------|
-| `cht-dev-cluster` | `cht-dev-backend`, `cht-dev-worker`, `cht-dev-companion` |
+| `cht-dev-cluster` | `cht-dev-backend`, `cht-dev-worker`, `cht-dev-companion`, `cht-reports-dev` |
 | `contenthub-dev-cluster` | `contenthub-dev-api`, `contenthub-dev-worker` |
 
 RDS: `cht-dev-db`, `cht-dev-companion-db`, `contenthub-dev-db`.

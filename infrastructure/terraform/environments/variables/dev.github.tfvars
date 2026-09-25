@@ -8,6 +8,7 @@ ecs_clusters = {
     "cht-dev-backend",
     "cht-dev-worker",
     "cht-dev-companion",
+    "cht-reports-dev",
   ]
   contenthub-dev-cluster = [
     "contenthub-dev-api",
