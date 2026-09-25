@@ -43,7 +43,7 @@ def is_denied_name(name: str) -> bool:
         return True
     if lowered in PROD_DENY_EXACT:
         return True
-    if "-dev-" not in lowered:
+    if "-dev-" not in lowered and not lowered.endswith("-dev"):
         return True
     return False
 

@@ -96,14 +96,14 @@ Configured in [`infrastructure/terraform/environments/variables/dev.github.tfvar
 
 | Cluster | Services |
 |---------|----------|
-| `cht-dev-cluster` | `cht-dev-backend`, `cht-dev-worker`, `cht-dev-companion` |
+| `cht-dev-cluster` | `cht-dev-backend`, `cht-dev-worker`, `cht-dev-companion`, `cht-reports-dev` |
 | `contenthub-dev-cluster` | `contenthub-dev-api`, `contenthub-dev-worker` (skipped if missing) |
 
 **RDS:** `cht-dev-db`, `cht-dev-companion-db`, `contenthub-dev-db`.
 
 Missing services/DBs are skipped. Resources must be tagged `Environment=dev` or `development`.
 
-**Never touched:** `cht-platform-*`, prod Content Hub (`contenthub-cluster`, `contenthub-api`), `*-prod-*`, or names without `-dev-`.
+**Never touched:** `cht-platform-*`, prod Content Hub (`contenthub-cluster`, `contenthub-api`), `*-prod-*`, or names that neither contain `-dev-` nor end with `-dev`.
 
 ALB and NAT stay up. AWS may auto-restart a stopped RDS instance after **7 days**. CloudWatch Logs only (no SNS).
 
