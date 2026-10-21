@@ -117,6 +117,6 @@ feature/*  →  deploy-dev.yml (development)
 
 Actions → **Dev lightswitch** → `on` or `off`. Source is `github.actions`, which bypasses the US-holiday skip on the `on` Lambda.
 
-## RDS note
+## RDS
 
-A stopped RDS instance may be auto-started by AWS after 7 days. The weekday `off` schedule will stop it again the next evening.
+Lightswitch scales ECS only. Dev RDS instances stay running through the on and off schedules.

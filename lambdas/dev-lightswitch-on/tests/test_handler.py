@@ -24,42 +24,37 @@ def _env(monkeypatch):
 
 
 @patch("handler.probe", return_value=[])
-@patch("handler.start_all", return_value=[{"db": "cht-dev-db", "status": "started"}])
 @patch("handler.scale_services", return_value=[{"service": "cht-dev-backend", "status": "updated"}])
 @patch("handler.is_us_federal_holiday", return_value=False)
-def test_on_runs(_holiday, scale, start, _health, monkeypatch):
+def test_on_runs(_holiday, scale, _health, monkeypatch):
     _env(monkeypatch)
     result = handler({"source": "eventbridge.scheduler"}, None)
     assert result["status"] == "ok"
+    assert "rds" not in result
     scale.assert_called_once()
-    start.assert_called_once()
     assert scale.call_args.kwargs["desired"] == 1
 
 
 @patch("handler.probe")
-@patch("handler.start_all")
 @patch("handler.scale_services")
 @patch("handler.is_us_federal_holiday", return_value=True)
-def test_on_skips_holiday(holiday, scale, start, probe, monkeypatch):
+def test_on_skips_holiday(holiday, scale, probe, monkeypatch):
     _env(monkeypatch)
     result = handler({"source": "eventbridge.scheduler"}, None)
     assert result["status"] == "skipped_holiday"
     scale.assert_not_called()
-    start.assert_not_called()
     probe.assert_not_called()
     holiday.assert_called()
 
 
 @patch("handler.probe", return_value=[])
-@patch("handler.start_all", return_value=[])
 @patch("handler.scale_services", return_value=[])
 @patch("handler.is_us_federal_holiday", return_value=True)
-def test_manual_on_bypasses_holiday(_holiday, scale, start, _health, monkeypatch):
+def test_manual_on_bypasses_holiday(_holiday, scale, _health, monkeypatch):
     _env(monkeypatch)
     result = handler({"source": "github.actions"}, None)
     assert result["status"] == "ok"
     scale.assert_called_once()
-    start.assert_called_once()
 
 
 def test_holiday_new_years():

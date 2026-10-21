@@ -12,7 +12,7 @@ There is **no production / platform stack** here. **Deploy only through GitHub A
 
 | Area | Description |
 |------|-------------|
-| **Dev lightswitch** | Scale CHT + Companion + Content Hub **dev** ECS services and start/stop their RDS instances on a weekday Eastern schedule |
+| **Dev lightswitch** | Scale CHT + Companion + Content Hub **dev** ECS services on a weekday Eastern schedule. RDS stays running |
 | **Cost reporter** | Stub for later CUR / Cost Explorer reporting (no schedule) |
 | **CI** | Per-Lambda Docker images, change-detected deploy, Terraform for ECR / IAM / Lambda / EventBridge Scheduler |
 
@@ -23,8 +23,8 @@ There is **no production / platform stack** here. **Deploy only through GitHub A
 ```
 cht-util-lambdas/
 ├── lambdas/
-│   ├── dev-lightswitch-on/    # weekday 08:00 ET — scale/start allowlisted dev
-│   ├── dev-lightswitch-off/   # weekday 20:00 ET — scale 0 / stop RDS
+│   ├── dev-lightswitch-on/    # weekday 08:00 ET — scale allowlisted dev ECS up
+│   ├── dev-lightswitch-off/   # weekday 20:00 ET — scale allowlisted dev ECS to 0
 │   └── cost-reporter/         # stub (no schedule)
 ├── infrastructure/
 │   ├── aws-github-oidc-setup.sh
@@ -45,7 +45,7 @@ Each Lambda is self-contained (`Dockerfile`, `requirements.txt`, tests). CI disc
 ### Lambdas (Python 3.11)
 
 - **AWS Lambda container images** (`public.ecr.aws/lambda/python:3.11`)
-- **boto3** — ECS `UpdateService`, RDS `StartDBInstance` / `StopDBInstance`
+- **boto3** — ECS `UpdateService`
 - **holidays** — US federal holidays on the `on` Lambda only
 - **pytest** — unit tests with mocked AWS (no live calls)
 
@@ -71,8 +71,8 @@ Account `233636046512`, region `us-east-1`.
 
 | Directory | AWS function / ECR | Schedule | Role |
 |-----------|--------------------|----------|------|
-| `lambdas/dev-lightswitch-on/` | `cht-dev-lightswitch-on` | `cron(0 8 ? * MON-FRI *)` America/New_York | Scale **on** + start RDS. **No-op on US federal holidays** unless invoked from GitHub |
-| `lambdas/dev-lightswitch-off/` | `cht-dev-lightswitch-off` | `cron(0 20 ? * MON-FRI *)` America/New_York | desiredCount `0` + stop RDS (including holiday evenings) |
+| `lambdas/dev-lightswitch-on/` | `cht-dev-lightswitch-on` | `cron(0 8 ? * MON-FRI *)` America/New_York | Scale ECS **on**. **No-op on US federal holidays** unless invoked from GitHub. RDS is left running |
+| `lambdas/dev-lightswitch-off/` | `cht-dev-lightswitch-off` | `cron(0 20 ? * MON-FRI *)` America/New_York | ECS desiredCount `0` (including holiday evenings). RDS is left running |
 | `lambdas/cost-reporter/` | `cht-dev-cost-reporter` | None | Stub |
 
 Directory `dev-*` maps to AWS name `cht-<dir>` (e.g. `dev-lightswitch-on` → `cht-dev-lightswitch-on`). Other dirs map to `cht-dev-<dir>`.
@@ -90,7 +90,7 @@ Manual override: **Actions → Dev lightswitch** → `on` / `off` (`source=githu
 
 ### Allowlist (what lightswitch may touch)
 
-Configured in [`infrastructure/terraform/environments/variables/dev.github.tfvars`](infrastructure/terraform/environments/variables/dev.github.tfvars) and injected as `ALLOWLIST_CLUSTERS` / `ALLOWLIST_DB_IDS`. IAM is scoped to these ARNs.
+Configured in [`infrastructure/terraform/environments/variables/dev.github.tfvars`](infrastructure/terraform/environments/variables/dev.github.tfvars) and injected as `ALLOWLIST_CLUSTERS`. IAM `ecs:UpdateService` is scoped to these service ARNs.
 
 **ECS**
 
@@ -99,13 +99,13 @@ Configured in [`infrastructure/terraform/environments/variables/dev.github.tfvar
 | `cht-dev-cluster` | `cht-dev-backend`, `cht-dev-worker`, `cht-dev-companion`, `cht-reports-dev` |
 | `contenthub-dev-cluster` | `contenthub-dev-api`, `contenthub-dev-worker` (skipped if missing) |
 
-**RDS:** `cht-dev-db`, `cht-dev-companion-db`, `contenthub-dev-db`.
+Missing services are skipped. Resources must be tagged `Environment=dev` or `development`.
 
-Missing services/DBs are skipped. Resources must be tagged `Environment=dev` or `development`.
+**Left running:** RDS (`cht-dev-db`, `cht-dev-companion-db`, `contenthub-dev-db`), ALB, and NAT.
 
 **Never touched:** `cht-platform-*`, prod Content Hub (`contenthub-cluster`, `contenthub-api`), `*-prod-*`, or names that neither contain `-dev-` nor end with `-dev`.
 
-ALB and NAT stay up. AWS may auto-restart a stopped RDS instance after **7 days**. CloudWatch Logs only (no SNS).
+CloudWatch Logs only (no SNS).
 
 Optional health probes (log-only): `https://devapp.communityhealth.media/health/ready`, `https://devhub.communityhealth.media`.
 
