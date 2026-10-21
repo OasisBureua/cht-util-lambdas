@@ -1,4 +1,7 @@
-"""cht-dev-lightswitch-on — scale allowlisted dev ECS/RDS up."""
+"""cht-dev-lightswitch-on — scale allowlisted dev ECS services up.
+
+RDS instances are left running.
+"""
 
 from __future__ import annotations
 
@@ -6,11 +9,10 @@ import json
 import logging
 import os
 
-from allowlist import load_clusters, load_db_ids, desired_count_on
+from allowlist import load_clusters, desired_count_on
 from ecs_actions import scale_services
 from health import probe
 from holidays_check import is_us_federal_holiday
-from rds_actions import start_all
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -28,11 +30,9 @@ def handler(event, context):
         return {"status": "skipped_holiday", "source": source}
 
     clusters = load_clusters()
-    db_ids = load_db_ids()
     desired = desired_count_on()
 
     ecs_results = scale_services(clusters, desired=desired, wait=True)
-    rds_results = start_all(db_ids, wait=True)
     health_results = probe()
 
     result = {
@@ -40,7 +40,6 @@ def handler(event, context):
         "source": source,
         "desiredCount": desired,
         "ecs": ecs_results,
-        "rds": rds_results,
         "health": health_results,
         "region": os.environ.get("AWS_REGION", "us-east-1"),
     }
